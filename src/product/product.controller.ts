@@ -1,11 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Inject,
+} from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ClientProxy } from '@nestjs/microservices';
 
-@Controller('product')
+@Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    @Inject('Product_Service') private readonly client: ClientProxy,
+  ) {}
 
   @Post()
   create(@Body() createProductDto: CreateProductDto) {
@@ -14,6 +27,7 @@ export class ProductController {
 
   @Get()
   findAll() {
+    this.client.emit('hello', 'Hello from another service');
     return this.productService.findAll();
   }
 
@@ -23,12 +37,19 @@ export class ProductController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.update(+id, updateProductDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto,
+  ) {
+    await this.productService.update(+id, updateProductDto);
+    const product = await this.productService.findOne(+id);
+    return product;
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productService.remove(+id);
+  async remove(@Param('id') id: string) {
+    const product = await this.productService.findOne(+id);
+    await this.productService.remove(+id);
+    return product;
   }
 }
