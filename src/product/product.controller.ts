@@ -21,8 +21,11 @@ export class ProductController {
   ) {}
 
   @Post()
-  create(@Body() createProductDto: CreateProductDto) {
-    return this.productService.create(createProductDto);
+  async create(@Body() createProductDto: CreateProductDto) {
+    const product = await this.productService.create(createProductDto);
+    console.log(product);
+    this.client.emit('product_created', product);
+    return product;
   }
 
   @Get()
@@ -43,6 +46,7 @@ export class ProductController {
   ) {
     await this.productService.update(+id, updateProductDto);
     const product = await this.productService.findOne(+id);
+    this.client.emit('product_updated', product);
     return product;
   }
 
@@ -50,6 +54,8 @@ export class ProductController {
   async remove(@Param('id') id: string) {
     const product = await this.productService.findOne(+id);
     await this.productService.remove(+id);
+    this.client.emit('product_deleted', product.id);
+
     return product;
   }
 }
