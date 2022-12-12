@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Inject,
+  NotFoundException,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -57,5 +58,17 @@ export class ProductController {
     this.client.emit('product_deleted', product.id);
 
     return product;
+  }
+
+  @Post(':id/like')
+  async likeBoss(@Param('id') id: string) {
+    const product = await this.productService.findOne(+id);
+    if (!product) {
+      throw new NotFoundException('Bunday product topilmadi');
+    }
+
+    return this.productService.update(+id, {
+      likes: product.likes + 1,
+    });
   }
 }
